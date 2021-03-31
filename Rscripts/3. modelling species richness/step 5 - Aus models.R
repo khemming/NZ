@@ -82,10 +82,12 @@
                    data = spv, correlation = corGaus(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
     model_s <- gls(spp_col ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
                    data = spv, correlation = corSpher(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
+    model_r <- gls(spp_col ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt,
+                   data = spv, correlation = corRatio(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
     model_lm <- lm(spp_col ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt,
                    data = spv, na.action = na.omit)
   # compare models using AICc
-    model_sel <- model.sel(model_e, model_g , model_s, model_lm)
+    model_sel <- model.sel(model_e, model_g , model_s, model_r, model_lm)
     return(model_sel)
   }
   
@@ -98,7 +100,7 @@
   cor_str
 
 # save all gls models
-  gls_mat <- matrix(nrow = 4, ncol = 72) # ncol = 18 * no. of species
+  gls_mat <- matrix(nrow = 5, ncol = 72) # ncol = 18 * no. of species
   
   gls_mat[,] <- unlist(gls_l, recursive = T)
   gls_mat2 <- rbind(gls_mat[, 1:18],  
@@ -107,12 +109,15 @@
                     gls_mat[, 55:72])
   
   colnames(gls_mat2) <- colnames(gls_l[[1]])
-  rownames(gls_mat2) <- rep(spp, each = 4)
+  rownames(gls_mat2) <- rep(spp, each = 5)
 
 # run lowest-AIC models ------------------------------------------------------------------
-# native C3 =  corGaus(form = ~long + lat, nugget=T)
+# identified in correlation structure
+  cor_str
+  
+# native C3 =  corSpher(form = ~long + lat, nugget=T)
   model_list[[1]] <- gls(Aus_native_C3 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
-      data = spv, correlation = corGaus(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
+      data = spv, correlation = corSpher(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
   ci_list[[1]] <- data.frame(intervals(model_list[[1]], 0.95, which = "coef")$coef)
   
 # native C4 =  corExp(form = ~long + lat, nugget=T)
@@ -120,12 +125,12 @@
                          data = spv, correlation = corExp(form = ~long+lat,T), na.action = na.omit, method = "ML")
   ci_list[[2]] <- data.frame(intervals(model_list[[2]], 0.95, which = "coef")$coef)
   
-# nonnative C3 =  corSpher(form = ~long + lat, nugget=T)
+# nonnative C3 =  corExp(form = ~long + lat, nugget=T)
   model_list[[3]] <- gls(Aus_nonnative_C3 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
-                         data = spv, correlation = corSpher(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
+                         data = spv, correlation = corExp(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
   ci_list[[3]] <- data.frame(intervals(model_list[[3]], 0.95, which = "coef")$coef)
   
-# native C4 =  corExp(form = ~long + lat, nugget=T)
+# nonnative C4 =  corExp(form = ~long + lat, nugget=T)
   model_list[[4]] <- gls(Aus_nonnative_C4 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
                          data = spv, correlation = corExp(form = ~long+lat,T), na.action = na.omit, method = "ML")
   ci_list[[4]] <- data.frame(intervals(model_list[[4]], 0.95, which = "coef")$coef)
@@ -134,40 +139,40 @@
   names(ci_list) <- spp
   
 # wrangle parameter estimates into plot-ready tables ---------------    
-# long format with both native and nonnative, ordered correctly
-  status <- rep(c("Native", "Nonnative"), each = 10)
-  
-# function
-  model_df <- function(nat_model, nnat_model){
-    nat <- nat_model %>% 
-           mutate(pv = rownames(nat_model),
-                  status = "Native") %>%
-           slice(2:9)
-    nnat <- nnat_model %>% 
-      mutate(pv = rownames(nat_model),
-             status = "Nonnative") %>%
-      slice(2:9)
-    long_df <- bind_rows(nat, nnat) %>%
-      mutate(country = "AUS",
-             status = as.factor(status),
-             estimate = est.) %>%
-             dplyr::select(pv, country, status, lower, estimate, upper)
-    return(long_df)
+  model_df <- function(cis, stat, location){
+    df <- cis %>% 
+          mutate(pv = rownames(cis),
+                  status = stat) %>%
+          slice(3:9) %>%
+          mutate(country = location,
+                 status = as.factor(status),
+                 estimate = est.) %>%
+          dplyr::select(pv, country, status, lower, estimate, upper)
+    return(df)
   }
   
 # run   
-  ausc3 <- model_df(ci_list[[1]], ci_list[[3]])
-  ausc3
+  natausc3 <- model_df(ci_list[[1]], "Native", "AU")
+  natausc3
+  
+  natausc4 <- model_df(ci_list[[2]], "Native", "AU")
+  natausc4
+  
+  nonausc3 <- model_df(ci_list[[3]], "Nonnative", "AU")
+  nonausc3
     
-  ausc4 <- model_df(ci_list[[2]], ci_list[[4]])
-  ausc4
+  nonausc4 <- model_df(ci_list[[4]], "Nonnative", "AU")
+  nonausc4
   
 # save data ------------------------------------------------------------------
   write.csv(m_mat, "Results/csv/models/Aus Morans I.csv", row.names = T)
   write.csv(gls_mat2, "Results/csv/models/Aus GLS model structures.csv", row.names = T)
   
-  write.csv(ausc3, "Results/csv/models/Aus C3 mean estimates.csv", row.names = F)
-  write.csv(ausc4, "Results/csv/models/Aus C4 mean estimates.csv", row.names = F)
+  write.csv(natausc3, "Results/csv/models/native Aus C3 mean estimates.csv", row.names = F)
+  write.csv(nonausc3, "Results/csv/models/nonnative Aus C3 mean estimates.csv", row.names = F)
+  
+  write.csv(natausc4, "Results/csv/models/native Aus C4 mean estimates.csv", row.names = F)
+  write.csv(nonausc4, "Results/csv/models/nonnative Aus C4 mean estimates.csv", row.names = F)
   
   save.image("Data files/rdata/Aus models.RData")
 

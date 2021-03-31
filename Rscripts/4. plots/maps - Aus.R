@@ -38,19 +38,6 @@
   aus_x <- c(112, 155) 
   aus_y <- c(-45, -7)
  
-# species richness scale bars -----------------------------------------------------------
-# in raw richness
-  j <- vector()
-  
-  for (i in 1:nlayers(aus_pred)){
-    j[i] <- ceiling(exp(cellStats(aus_pred[[i]], "max", na.rm = T)))
-  }
-  j 
-  aus_leg_lab <- list(c(65, 30, 10, 5, 1),   # 61
-                      c(80, 40, 20, 5, 1),   # 78
-                      c(30, 20, 10, 5, 1),   # 30
-                      c(40, 20, 10, 5, 1))   # 40
-  
 # maps - log richness ---------------------------------------------
   ras_v10_l <- function(raster, title, sr_breaks, legend_title){
     
@@ -62,10 +49,10 @@
     raster_df <- as.data.frame(raster_spdf)
     colnames(raster_df) <- c("value", "x", "y")
     
-  # km scale bar  
+  # km scale bar
     km_scale <- raster_df %>% rename(lat = y, long = x)
-    km_pos <- as.vector(data.frame(x = 150, 
-                                   y = -30))
+    km_pos <- as.vector(data.frame(x = 130,
+                                   y = -40))
     
   # colours
     colr <- rev(brewer.pal(11, "Spectral"))
@@ -84,7 +71,10 @@
                            labels = sr_breaks,
                            space = "Lab",
                            name = legend_title) +
-      coord_fixed(ratio = diff(aus_x)/diff(aus_y), xlim = aus_x, ylim = aus_y) +
+      coord_fixed(ratio = 38/33, xlim = c(112, 155), ylim = c(-45, -7)) +
+      ggsn::scalebar(km_scale, dist = 500, dist_unit = "km",  st.size = 4, st.dist = 0.05, st.bottom = T, height = 0.05, transform = T, model = 'WGS84', anchor = km_pos) +
+      north(data = km_scale, symbol = 1, anchor = c(y = -37, x = 139),
+            x.min = 115, x.max = 150, y.min = 0, y.max = -7, scale = 0.15) +
       theme_map() +
       theme(legend.direction = "vertical",
             legend.justification = "right",
@@ -112,7 +102,14 @@
 # legend_title = legend units
 # -------------------------------------------------------
   
-# observed   
+# Australian predicted 
+# scale bar  
+  exp(aus_pred)
+  aus_leg_lab <- list(c(65, 30, 10, 5, 1),   # 61
+                      c(75, 40, 20, 5, 1),   # 72
+                      c(35, 20, 10, 5, 1),   # 31
+                      c(40, 20, 10, 5, 1))   # 36
+# run  
   for (i in 1:length(names(aus_pred))) {
     raster <- aus_pred[[i]]
     title <- paste0(names(aus_pred)[i])

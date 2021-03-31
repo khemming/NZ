@@ -21,7 +21,7 @@ names(aus_stack) <- aus_names
 list2env(setNames(unstack(aus_stack), names(aus_stack)), .GlobalEnv)
 
 # predicted richness to NZ
-setwd("C:/Users/s436862/Dropbox/NZ/Results/rasters/log predicted")
+setwd("C:/Users/s436862/Dropbox/NZ/Results/rasters/predicted")
 files_ls <- list.files(pattern = "predicted.grd")
 
 nz_ls <- Filter(function(x) grepl("NZ_", x), files_ls)
@@ -37,7 +37,7 @@ names(aus_stack) <- aus_names
 list2env(setNames(unstack(aus_stack), names(aus_stack)), .GlobalEnv)
 
 # predicted richness to Aus
-setwd("C:/Users/s436862/Dropbox/NZ/Results/rasters/log predicted")
+setwd("C:/Users/s436862/Dropbox/NZ/Results/rasters/predicted")
 files_ls <- list.files(pattern = "to_Aus.grd")
 aus_names2 <- gsub(pattern = "\\.grd$", "", files_ls)
 pr2aus_stack <- stack(files_ls)

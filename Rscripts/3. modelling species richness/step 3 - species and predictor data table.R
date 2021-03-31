@@ -63,20 +63,6 @@
   head(aus_spp_pv2)
   write.csv(aus_spp_pv2, "Results/csv/predictor variables/Australia spp predictor variables 1141.csv", row.names = F)    
 
-# number of cells with species richness estimates -----------------------------------
-# by country, pathway and status 
-  aus_nC3 <- length(na.omit(getValues(aus_stack$Aus_native_C3)))
-  aus_nC4 <- length(na.omit(getValues(aus_stack$Aus_native_C4)))
-  
-  aus_nnC3 <- length(na.omit(getValues(aus_stack$Aus_nonnative_C3)))
-  aus_nnC4 <- length(na.omit(getValues(aus_stack$Aus_nonnative_C4)))
-  
-  nz_nC3 <- length(na.omit(getValues(nz_stack$NZ_native_C3)))
-  nz_nC4 <- length(na.omit(getValues(nz_stack$NZ_native_C4)))
-  
-  nz_nnC3 <- length(na.omit(getValues(nz_stack$NZ_nonnative_C3)))
-  nz_nnC4 <- length(na.omit(getValues(nz_stack$NZ_nonnative_C4)))
-  
 # ----------------------------------------------------------------------      
   
 

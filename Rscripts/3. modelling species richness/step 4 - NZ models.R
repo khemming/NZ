@@ -41,6 +41,7 @@
   gls_l <- list()               # general least squares parameter estimates
   cor_str <- matrix(nrow = 3)   # identifies best model from model selection
   model_list <- list()          # stores best models
+  ci_ls <- list()               # store confidence intervals for gls models
 
 # identify spatial autocorrelation function (returns p-value)
   moran_fun <- function(spp_col, col_no) {
@@ -87,7 +88,7 @@
     return(model_sel)
   }
   
-  # run and choose best model by AICc ------------------------------------------------
+# run and choose best model by AICc ------------------------------------------------
   for (i in 1:length(spp)){
     spp_col <- spv[, i]
     gls_l[[i]] <- model_sel_fun(spp_col)
@@ -95,12 +96,12 @@
   }
   cor_str # no data = lm were best fits
   
-  # save all gls models
+# save all gls models
   gls_mat <- matrix(nrow = 5, ncol = 54) # ncol = 18 * no. of species
   
   gls_mat[,] <- unlist(gls_l, recursive = T)
   gls_mat2 <- rbind(gls_mat[, 1:18],  
-                    gls_mat[, 19:36],  
+                    gls_mat[, 19:36],
                     gls_mat[, 37:54])
   
   colnames(gls_mat2) <- colnames(gls_l[[1]])
@@ -110,64 +111,52 @@
 # although linear models fit best, there was spatial a/c identified in native and nonnative C3 
 # therefore taking next best models (Gaussian in both cases)
   model_list[[1]] <- gls(NZ_native_C3 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
-                         data = spv, correlation = corGaus(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
-  model_list[[2]] <- gls(NZ_nonnative_C3 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
-                         data = spv, correlation = corGaus(form = ~long + lat, nugget=T), na.action = na.omit, method = "ML")
-  model_list[[3]] <- lm(NZ_nonnative_C4 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, data = spv)
+                         data = spv, correlation = corGaus(form = ~long + lat, nugget=T), 
+                         na.action = na.omit, method = "ML")
+  ci_ls[[1]] <- data.frame(intervals(model_list[[1]], 0.95, which = "coef")$coef)
   
+  model_list[[2]] <- gls(NZ_nonnative_C3 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
+                         data = spv, correlation = corGaus(form = ~long + lat, nugget=T), 
+                         na.action = na.omit, method = "ML")
+  ci_ls[[2]] <- data.frame(intervals(model_list[[2]], 0.95, which = "coef")$coef)
+  
+  model_list[[3]] <- lm(NZ_nonnative_C4 ~ proportion_cover + hii + th + pcoldq + pwarmq + ts + arid + amt, 
+                        data = spv)
+  ci_ls[[3]] <- data.frame(lower = confint(model_list[[3]])[,1], # lower CI
+                          est. = model_list[[3]]$coefficients, # mean estimate
+                          upper = confint(model_list[[3]])[,2]) # upper CI
   names(model_list) <- spp
   
-# wrangle parameter estimates into plot-ready tables -------------------------------------------
-# C3 (two groups) C4 (one group)
-  c3_a <- data.frame(pv = rep(c("proportion_cover", "hii", "th",   "pcoldq", "pwarmq", 
-                                "ts",  "arid", "amt"),   2))
+# parameter estimates into plot-ready tables -------------------------------------------
+  model_df <- function(cis, stat, location){
+    df <- cis %>% 
+      mutate(pv = rownames(cis),
+             status = stat) %>%
+      slice(3:9) %>%
+      mutate(country = location,
+             status = as.factor(status),
+             estimate = est.) %>%
+      dplyr::select(pv, country, status, lower, estimate, upper)
+    return(df)
+  }
   
-  c4_a <- data.frame(pv = c("proportion_cover", "hii", "th",   "pcoldq", "pwarmq", 
-                            "ts",  "arid", "amt"))
+# run   
+  natnzc3 <- model_df(ci_ls[[1]], "Native", "NZ")
+  natnzc3
   
+  nonnzc3 <- model_df(ci_ls[[2]], "Nonnative", "NZ")
+  nonnzc3
   
-# native  native and nonnative C3; then native C4  
-  c3_b <- c3_a %>% mutate(country = rep("NZ", 16),
-                          status = c(rep("Native", 8), rep("Nonnative", 8)),
-                          lower = NA,
-                          estimate = NA,
-                          upper = NA)
-  c3_b
-  c4_b <- c4_a %>% mutate(country = rep("NZ", 8),
-                          status = rep("Nonnative", 8),
-                          lower = NA,
-                          estimate = NA,
-                          upper = NA)
-  c4_b
-  
-# attain relevant parameter estimates and confidence intervals
-# lower CI
-  c3_b[c3_b$status == "Native", "lower"] <- confint(model_list[[1]])[2:9, 1]    # native C3
-  c3_b[c3_b$status == "Nonnative", "lower"] <- confint(model_list[[2]])[2:9, 1] # nonnative C3
-  
-  c4_b[c4_b$status == "Nonnative", "lower"] <- confint(model_list[[3]])[2:9, 1] # nonnative C4
-  
-# mean estimate
-  c3_b[c3_b$status == "Native", "estimate"] <- model_list[[1]]$coefficients[2:9]
-  c3_b[c3_b$status == "Nonnative", "estimate"] <- model_list[[2]]$coefficients[2:9]
-  
-  c4_b[c4_b$status == "Nonnative", "estimate"] <- model_list[[3]]$coefficients[2:9]
-  
-# upper CI  
-  c3_b[c3_b$status == "Native", "upper"] <- confint(model_list[[1]])[2:9, 2]
-  c3_b[c3_b$status == "Nonnative", "upper"] <- confint(model_list[[2]])[2:9, 2]
-  
-  c4_b[c4_b$status == "Nonnative", "upper"] <- confint(model_list[[3]])[2:9, 2]
-  
-  c3_b
-  c4_b
+  nonnzc4 <- model_df(ci_ls[[3]], "Nonnative", "NZ")
+  nonnzc4
   
 # save data ------------------------------------------------------------------
   write.csv(m_mat, "Results/csv/models/NZ Morans I.csv", row.names = T)
   write.csv(gls_mat2, "Results/csv/models/NZ GLS model structures.csv", row.names = T)
   
-  write.csv(c3_b, "Results/csv/models/NZ C3 mean estimates.csv", row.names = F)
-  write.csv(c4_b, "Results/csv/models/NZ C4 mean estimates.csv", row.names = F)
+  write.csv(natnzc3, "Results/csv/models/native NZ C3 mean estimates.csv", row.names = F)
+  write.csv(nonnzc3, "Results/csv/models/nonnative NZ C3 mean estimates.csv", row.names = F)
+  write.csv(nonnzc4, "Results/csv/models/nonnative NZ C4 mean estimates.csv", row.names = F)
   
   save.image("Data files/rdata/NZ models.RData")
 

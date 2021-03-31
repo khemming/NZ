@@ -85,45 +85,6 @@
   nz_x <- c(166, 179) 
   nz_y <- c(-48, -33)
  
-# species richness scale bars -----------------------------------------------------------
-# raw species richness to scale legends
-  
-# NZ  observed
-  j <- vector()
-  
-  for (i in 1:nlayers(nz_scale)){
-       j[i] <- ceiling(cellStats(nz_scale[[i]], "max", na.rm = T))
-  }
-  j 
-  
-  nz_obs_lab <- list(c(70,  45,  25, 10, 5, 1), # 65
-                     c( 2,  1.5,  1),           # 2
-                     c(70,  45,  25, 10, 5, 1), # 70
-                     c(35,  25,  10, 5, 1))     # 34
-
-# NZ predicted 
-  j <- vector()
-  
-  for (i in 1:nlayers(nz_pred)){
-    j[i] <- ceiling(cellStats(nz_scale[[i]], "max", na.rm = T))
-  }
-  j 
-  
-  nz_pred_lab <- list(c(75,  50,  25, 10, 5, 1), # 71
-                      c(75,  50,  25, 10, 5, 1), # 72
-                      c(35,  25,  10, 5, 1))     # 34
-       
-     
-# Aus
-  for (i in 1:nlayers(aus_scale)){
-    j[i] <- ceiling(cellStats(aus_scale[[i]], "max", na.rm = T))
-  }
-  j 
-  aus_leg_lab <- list(c(55,  35,  15, 5, 1),   # 52
-                      c(160, 120, 60, 10, 1),  # 158
-                      c(70,  40,  15, 5, 1),   # 41
-                      c(50,  30,  10, 5, 1))   # 49
-  
 # maps - log richness ---------------------------------------------
   ras_v10_l <- function(raster, title, sr_breaks, legend_title){
     
@@ -135,10 +96,10 @@
     raster_df <- as.data.frame(raster_spdf)
     colnames(raster_df) <- c("value", "x", "y")
     
-  # km scale bar  
+  # km scale bar
     km_scale <- raster_df %>% rename(lat = y, long = x)
-    km_pos <- as.vector(data.frame(x = 170, 
-                                   y = -40))
+    km_pos <- as.vector(data.frame(x = 178, 
+                                   y = -47))
     
   # colours
     colr <- rev(brewer.pal(11, "Spectral"))
@@ -158,6 +119,11 @@
                            space = "Lab",
                            name = legend_title) +
       coord_fixed(ratio = diff(nz_y)/diff(nz_x), xlim = nz_x, ylim = nz_y) +
+      # ggsn::scalebar(km_scale, dist = 125, dist_unit = "km",  st.size = 3, 
+      #                st.dist = 0.05, st.bottom = T, height = 0.05, transform = T, 
+      #                model = 'WGS84', anchor = km_pos) +
+      # north(data = km_scale, symbol = 1, anchor = c(y = -43, x = 177),
+      #       x.min = 178, x.max = 175, y.min = -45, y.max = -47, scale = 0.15) +
       theme_map() +
       theme(legend.direction = "vertical",
             legend.justification = "right",
@@ -170,7 +136,7 @@
             plot.title = element_text(size = 20, face = "bold", hjust = 0.1, vjust = -0.5)) +
       guides(fill = guide_colorbar(barheight = unit(5, "cm")))
     
-    plot(q)  
+    plot(q, )  
     
   # save 
     save_txt <- paste0("Results/maps/species/", title, ".jpeg")
@@ -185,7 +151,14 @@
 # legend_title = legend units
 # -------------------------------------------------------
   
-# observed   
+# NZ observed  
+# calculate species richness breaks  
+  nz_scale
+  nz_obs_lab <- list(c(70,  45,  25, 10, 5, 1), # 65
+                     c(1.5,  1),                # 2
+                     c(70,  45,  25, 10, 5, 1), # 70
+                     c(35,  20,  10, 5, 1))     # 34
+# run  
   for (i in 1:length(names(nz_obs))) {
     raster <- nz_obs[[i]]
     title <- paste0(names(nz_obs)[i], "_observed")
@@ -195,13 +168,11 @@
     ras_v10_l(raster, title, sr_breaks, legend_title)
   }
   
-# predicted 
-# NZ
-# note, there is some over-prediction, so I am re-scaling the scale bars  
+# NZ predicted
   exp(nz_pred)
-  nz_pred_lab <- list(c(75,  50,  25, 10, 5, 1), # 71
+  nz_pred_lab <- list(c(65,  40,  25, 10, 5, 1), # 64
                       c(75,  50,  25, 10, 5, 1), # 72
-                      c(35,  25,  10, 5, 1))     # 33
+                      c(35,  20,  10, 5, 1))     # 33
   
   for (i in 1:length(names(nz_pred))) {
     raster <- nz_pred[[i]]
@@ -214,10 +185,10 @@
   
 # Aus
   exp(aus_pred)
-  aus_pred_lab <- list(c(15,  10,  5, 1),     # 14
-                       c(60,  30, 15, 5, 1),  # 58
-                       c(12, 5, 1),           # 12
-                       c(10, 5, 1))           # 10
+  aus_pred_lab <- list(c(80, 50, 25, 10, 5, 1), # 79
+                       c(10, 5, 0.1),             # 9
+                       c(35,  20,  10, 5, 0.1),   # 33
+                       c(20, 10, 5, 1))         # 19
   
   for (i in 1:length(names(aus_pred))) {
     raster <- aus_pred[[i]]

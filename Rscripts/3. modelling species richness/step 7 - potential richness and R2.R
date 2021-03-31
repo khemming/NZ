@@ -53,7 +53,7 @@
 # correlation exploration ----------------------------------------------------------    
   cor(getValues(NZ_native_C3_predicted), 
       getValues(Aus_native_C3_predicted), 
-      method = "pearson", use = "complete.obs") # 0.74
+      method = "pearson", use = "complete.obs") # 0.77
   
   cor(getValues(NZ_native_C3_predicted), 
       getValues(NZ_nonnative_C3), 
@@ -69,7 +69,7 @@
   
   cor(getValues(NZ_nonnative_C4_predicted), 
       getValues(NZ_nonnative_C4), 
-      method = "pearson", use = "complete.obs") # 0.56
+      method = "pearson", use = "complete.obs") # 0.57
   
   cor(getValues(Aus_native_C3_predicted_to_Aus), 
       getValues(Aus_native_C3), 

@@ -16,6 +16,7 @@
   nz_models <- model_list
   
   spp_models <- c(aus_models, nz_models )
+  names(spp_models)
 
 # NZ and predictor variables
   nz <- raster("Data files/NZ/NZ 83.grd")
