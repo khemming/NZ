@@ -54,12 +54,21 @@
 # df
   aus_df <- data.frame(cbind(cell_id, cell_category, pc2))
   colnames(aus_df) <- c("cell_id", "cell_category", "proportion_cover")
-  
+  names(aus_df)
+
 # add in coordinates of land-cells
   aus_df2 <- left_join(aus_df, cell_list, by = "cell_id")
-  slice(aus_df2, 400:410)
+  slice(aus_df3, 400:410)
   
-# save  
+# save Australian meta data  
   write.csv(aus_df2, "Data files/Australia/Australia 2538.csv", row.names = F)
+  
+# add predictor variables
+  stack_df <- data.frame(getValues(stack))
+  aus_df3 <- cbind(aus_df2, stack_df)
+  slice(aus_df3, 400:410)
+  
+# save with predictor varaibles
+  write.csv(aus_df3, "Data files/Australia/Australia predictor varaibles 2538.csv", row.names = F)
   
 # ----------------------------------------------------------------------------------
