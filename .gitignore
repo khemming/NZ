@@ -1,6 +1,7 @@
 # History files
 .Rhistory
 .Rapp.history
+.DS_Score
 
 # Ignore these folders
 Data files
