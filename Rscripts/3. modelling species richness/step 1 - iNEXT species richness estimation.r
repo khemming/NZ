@@ -114,11 +114,12 @@
   
 # raw species richness
   spp_per_cell <- as.numeric(factor(dat$species))
-  n_spp <- rasterize(xy, raster, field = spp_per_cell, fun = function(x,...) {length(unique(na.omit(x))) })
+  n_spp <- rasterize(xy, raster, field = spp_per_cell, fun = function(x,...) 
+    {length(unique(na.omit(x))) })
   m_spp <- mask(n_spp, raster)
   plot(m_spp)
   
-#return the values for each cell and the rasters
+# return the values for each cell and the rasters
   return(list(cell_cov, rast_cov, cell_size, rast_size, nrec, cell_cov_warn, rast_cov_warn, m_spp))
   
 }

@@ -19,16 +19,14 @@
 
 # data ------------------------------------------------
 # country outlines
-  setwd("C:/Users/s436862/Dropbox/NZ")
   nz <- readOGR("Data files/NZ/NZ shapefile.shp")
   plot(nz)
 
 # raw richness
-  setwd("C:/Users/s436862/Dropbox/NZ/Results/rasters/iNEXT")
-  files_ls <- list.files(pattern = ".grd")
+  files_ls <- list.files(path = "Results/rasters/iNEXT", pattern = ".grd")
   
   nz_ls <- Filter(function(x) grepl("NZ_", x), files_ls)
-  nz_names <- gsub(pattern = "\\.grd$", "", nz_ls)
+  nz_names <- gsub(pattern = "Results/rasters/iNEXT/$.grd", "", nz_ls)
   nz_scale <- stack(nz_ls)
   names(nz_scale) <- nz_names
   
@@ -186,8 +184,8 @@
 # Aus
   exp(aus_pred)
   aus_pred_lab <- list(c(80, 50, 25, 10, 5, 1), # 79
-                       c(10, 5, 0.1),             # 9
-                       c(35,  20,  10, 5, 0.1),   # 33
+                       c(10, 5, 0.1),           # 9
+                       c(35,  20,  10, 5, 0.1), # 33
                        c(20, 10, 5, 1))         # 19
   
   for (i in 1:length(names(aus_pred))) {

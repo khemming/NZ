@@ -1,7 +1,8 @@
 
 
 # library ------------------------------------------------------------------
-  library(tidyverse)
+  library(dplyr)
+  library(tidyr)
   library(raster)
   library(broom)
   library(magrittr)

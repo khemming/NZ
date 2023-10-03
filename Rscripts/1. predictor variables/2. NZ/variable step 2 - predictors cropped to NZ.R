@@ -1,94 +1,94 @@
 
 
 # library ---------------------------------------------------------------
-  library(raster)
-  library(rgdal)
- 
-  rm(list = ls())
+  library(sf)
+  library(geodata)
+  
+  rm(list = ls()) 
+
+  source("Rscripts/1. predictor variables/2. NZ/variable step 1 - NZ template.R")
   
 # data ------------------------------------------------------------------
-# note: raw predictor variable files will be stored and accessed in Non-native-family project
-#       only sourcing variable selected predictor variables, and exclude PEWC
-
 # New Zealand template
-  temp <- raster("Data files/NZ/NZ 1 km.grd")
+  temp <- nz_1km
+  
+### Start here
+# read in these files as reproducibly as possible - at least do it for HII as that has an update
+# do it for HII to begin with
+# read in as rast not raster
+# fiugre out CRS
+# do like richrd does and join with next one ro two scripts about sacling it and making it a single raster/tif image and saving it there
+
+  
   
 # predictor variables from nonnative families chapter 
-  setwd("C:/Users/s436862/Dropbox/NNF")
-  amt <- raster("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_01.tif")
-  arid <- raster("Data files/predictor variables/raw files/aridity/hdr.adf")
-  elev <- raster("Data files/predictor variables/raw files/elevation/GloElev_30as.asc")
-  hii <- raster("Data files/predictor variables/raw files/human influence index/hdr.adf")
-  pcoldq <- raster("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_19.tif")
-  pwarmq <- raster("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_18.tif")
-  ts <- raster("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_04.tif")
-  
-  setwd("C:/Users/s436862/Dropbox/NZ")
-  
+  amt <- rast("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_01.tif")
+  arid <- rast("Data files/predictor variables/raw files/aridity/hdr.adf")
+  elev <- rast("Data files/predictor variables/raw files/elevation/GloElev_30as.asc")
+  hii <- rast("Data files/predictor variables/raw files/human influence index/hdr.adf")
+  pcoldq <- rast("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_19.tif")
+  pwarmq <- rast("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_18.tif")
+  ts <- rast("Data files/predictor variables/raw files/wrldclim/wc2.0_bio_30s_04.tif")
+ 
 # crop to New Zealand -----------------------------------------------------
 # files with 1 km resolution
-  crop_1km_fun <- function(raw_raster, raster_name) {
-    # set things up
-      mask <- temp
-      projection(raw_raster) <- "+init=epsg:2193 +proj=merc 
-              +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 
-              +units=m +no_defs +lat_0=0 +lon_0=173 +k=0.9996"
-      crop_extent <- extent(mask)
-      names(raw_raster) <- raster_name
-      
+  
+  cv <- 0.9
+  
+  # make this work!!
+  
+  # function to interpolate from gam model to fill any missing land cells
+  int <- function(inrast) {
+    xy <- crds(setValues(inrast, 1:ncell(inrast)))
+    y <- values(inrast)[, 1]
+    y[is.nan(y)] <- NA
+    dat1 <- data.frame(y = y, long = xy[, 1], lat = xy[, 2])
+    m1 <- gam(y ~ s(long, lat), data = dat1)
+    dat1$pred <- predict(m1, newdata = data.frame(long = xy[, 1], lat = xy[, 2]))
+    dat1$y[is.na(dat1$y)] <- dat1$pred[is.na(dat1$y)]
+    outrast <- setValues(inrast, dat1$y)
+    return(outrast)
+  }
+  
+  c_nz <- function(ras, name, fn) {
     # crop larger extent
-      crop_raster <- crop(raw_raster, crop_extent)
+      cropd <- terra::crop(ras, temp, mask = T, snap = "near")
+      vald <- as.numeric(values(cropd, dataframe = F))
+      temp2 <- temp
+      values(temp2) <- vald
+      names(temp2) <- "layer"
+      temp3 <- terra::aggregate(temp2, fact = 100, fun = fn, na.rm = T)
+      temp4 <- crop(temp3, nz_sh)
       
-    # mask offshore values
-      masked_raster <- mask(crop_raster, mask)
+    # remove coastal cells with value less than cv  
       
-    # for some reason extents are slightly different
-      extent(masked_raster) <- crop_extent
+      rem <- values(temp4$layer)[, 1] == "NaN" | values(temp4$layer)[, 1] < cv
+    # set values with less than cv land cover to NA
+      nlay <- ncell(temp4)
+      for(i in 1:nlay) {
+        v <- as.matrix(values(temp4, dataframe = T))
+        v[rem] <- NA
+        values(temp4) <- v
+        q <- temp4
+        return(q)
+      }
       
-    # save
-      save <- paste0("Data files/predictor variables/NZ 1 km/", raster_name)
-      writeRaster(masked_raster, save, overwrite = T)
-      
+     
   }
   
 # run function  
-  crop_1km_fun(amt,    "amt")
-  crop_1km_fun(arid,   "arid")
-  crop_1km_fun(elev,   "elev")
-  crop_1km_fun(pcoldq, "pcoldq")
-  crop_1km_fun(pwarmq, "pwarmq")
-  crop_1km_fun(ts,     "ts")
+  amt <- c_nz(amt, "amt", "mean")
+  plot(amt)
+  arid <- c_nz(arid,   "arid", "mean")
+  plot(arid)
+  elev <- c_nz(elev,   "elev", "sd")
+  plot(elev)
+  pcoldq <- c_nz(pcoldq, "pcoldq")
+  plot(pcoldq)
+  pwarmq <- c_nz(pwarmq, "pwarmq")
+  plot(pwarmq)
+  ts <- c_nz(ts,     "ts")
+  plot(ts)
+  hii <- c_nz(hii, "hii")
+  plot(hii)  
 
-# crop to 1 km for HII 
-# note: for unknown reason, extent's not the same after initial cropping
-  crop_hii_fun <- function(raw_raster, raster_name) {
-    # set things up
-    mask <- temp
-    projection(raw_raster) <- "+init=epsg:2193 +proj=merc 
-              +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 
-              +units=m +no_defs +lat_0=0 +lon_0=173 +k=0.9996"
-    crop_extent <- extent(mask)
-    
-  # crop larger extent
-    crop_raster <- crop(raw_raster, crop_extent)
-    
-  # for some reason extents are slightly different
-    extent(crop_raster) <- crop_extent   
-    
-  # mask offshore values
-    masked_raster <- mask(crop_raster, mask)
-    
-  # for some reason extents are still slightly different
-    extent(masked_raster) <- crop_extent
-    names(masked_raster) <- raster_name
-    
-  # save
-    save <- paste0("Data files/predictor variables/NZ 1 km/", raster_name)
-    writeRaster(masked_raster, save, overwrite = T)
-    
-  }  
-  
-# run function
-  crop_hii_fun(hii, "hii")
-  
-# --------------------------------------------------------------------------
